@@ -47,3 +47,5 @@ in the next loop, whole previous conversation sent with the request, preserving 
 
 Learned about token usage, added console log to show the token usage for each loop, total tokens , both ins and outs.
 
+Extra:
+Wrote a shell script to create a new project folder with boilerplate started code for each day.
