@@ -27,3 +27,23 @@ added try catch block to read the exception message.
 Got 429 from some models becuase they were busy.
 
 
+Day 02:
+
+Learned about the different chat roles in a session.
+
+System - to set the context or rules which will be sent in each request.
+User - End user, here it's me.
+Assistant - AI Model.
+
+Learned how to set the System context using system persona.
+
+used Readline to get the User input from console instead of hardcoding. added rge user input to message list using User persona.
+
+used a while loop to iterate the conversation.
+
+got the assistant response, added it to the message list under assitant persona.
+
+in the next loop, whole previous conversation sent with the request, preserving it as a context memory.
+
+Learned about token usage, added console log to show the token usage for each loop, total tokens , both ins and outs.
+
