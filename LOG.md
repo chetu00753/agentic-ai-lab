@@ -26,6 +26,7 @@ Response json handling.
 added try catch block to read the exception message.
 Got 429 from some models becuase they were busy.
 
+-----------------------------------------------------------------------------------------------------------------------------------------
 
 Day 02:
 
@@ -49,3 +50,20 @@ Learned about token usage, added console log to show the token usage for each lo
 
 Extra:
 Wrote a shell script to create a new project folder with boilerplate started code for each day.
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+
+Day 03:
+
+Learned about chat option configurations,
+
+Temperature: 0 means deterministic, 1 creative.
+
+Learned how to read structured output from model response.
+
+Added a helper method to get the response T from model.
+
+Handled json string invalid format issues.
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+
