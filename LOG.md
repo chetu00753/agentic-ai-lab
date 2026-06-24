@@ -67,3 +67,16 @@ Handled json string invalid format issues.
 
 -----------------------------------------------------------------------------------------------------------------------------------------
 
+Day 04:
+
+Setup claude code in my system.
+
+Learned about CLAUDE.md file and how it works.
+
+Created a custom command /explain to explain the particular code block.
+
+Learned how to prompt to claude code, how to creately configure CLAUDE.md file to get the better results,
+how to create custom commands, how to connect MCP server to Caude code so it can read my project files.
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+
