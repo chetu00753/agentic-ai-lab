@@ -80,3 +80,27 @@ how to create custom commands, how to connect MCP server to Caude code so it can
 
 -----------------------------------------------------------------------------------------------------------------------------------------
 
+Day 05:
+
+Learned about streaming responses from the model.
+
+instead of waiting for the full response, the model sends it chunk by chunk and we print each chunk as it arrives using GetStreamingResponseAsync which returns IAsyncEnumerable.
+
+used await foreach to iterate over the chunks and write each chunk's text to console in real time.
+
+Learned about token usage in streaming responses.
+
+in MEA 10.7.0, there is no .Usage property on the chunk directly. usage is delivered as a UsageContent object inside chunk.Contents, typically on the final chunk.
+
+used OfType<UsageContent>().FirstOrDefault() to extract it from the Contents list.
+
+accessed input and output token counts from usageContent.Details.
+
+Added a StreamingWithCost() helper method that streams to console and prints estimated cost at the end.
+
+takes pricePerMillionTokens as a decimal parameter, calculates cost as (totalTokens / 1_000_000) * price.
+
+handles the case where provider doesn't return usage data and prints a fallback message.
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+
