@@ -1,0 +1,62 @@
+// Scenario 1 — Single tool: Calculator
+// Saved here so Program.cs can be reused for other scenarios.
+// To restore: copy this content back into Program.cs
+
+using System.ClientModel;
+using System.ComponentModel;
+using DotNetEnv;
+using Microsoft.Extensions.AI;
+using OpenAI;
+
+Env.Load();
+
+var openRouterKey = Environment.GetEnvironmentVariable("OPENROUTER_API_KEY");
+
+try
+{
+    // Connect to OpenRouter (our AI provider), pointing at their API endpoint
+    var client = new OpenAIClient(
+        new ApiKeyCredential(openRouterKey!),
+        new OpenAIClientOptions { Endpoint = new Uri("https://openrouter.ai/api/v1") }
+    );
+
+    // Build a pipeline: your code → FunctionInvocationMiddleware → OpenAI adapter → model
+    // UseFunctionInvocation() is the key piece — it automatically:
+    //   1. Spots when the model replies with a tool call instead of text
+    //   2. Runs the matching C# function
+    //   3. Sends the result back to the model
+    //   4. Repeats until the model writes a plain-text answer
+    // Without it, GetResponseAsync would return an empty res.Text when the model wants a tool.
+    IChatClient chat = new ChatClientBuilder(
+            client.GetChatClient("openai/gpt-oss-120b:free").AsIChatClient())
+        .UseFunctionInvocation()
+        .Build();
+
+    // Wrap a C# lambda as a tool the AI can "call by name".
+    // AIFunctionFactory reads the [Description] attributes to build the JSON schema
+    // that gets sent to the model so it knows what the tool does and what to pass in.
+    AITool calc = AIFunctionFactory.Create(
+        ([Description("The arithmetic expression to evaluate")] string expression) =>
+            // DataTable.Compute safely evaluates basic arithmetic without running arbitrary code
+            new System.Data.DataTable()
+                .Compute(expression, null)
+                .ToString(),
+        name: "calculator",
+        description: "Evaluate a basic arithmetic expression like '3 + 4 * 2'."
+    );
+
+    // Pass the tool to the model. The model now knows it CAN call "calculator" if needed.
+    var options = new ChatOptions { Tools = [calc] };
+
+    // This single await hides two HTTP round-trips when a tool is involved:
+    //   Trip 1 → model replies with tool call: calculator("238 * 17")
+    //   Trip 2 → model receives "4046" and replies with the final sentence
+    var res = await chat.GetResponseAsync("What is 238 * 17?", options);
+
+    // By the time we get here, res.Text is the model's plain-English answer
+    Console.WriteLine(res.Text);
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Error: {ex.Message}");
+}

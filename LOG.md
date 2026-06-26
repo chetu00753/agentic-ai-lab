@@ -104,3 +104,44 @@ handles the case where provider doesn't return usage data and prints a fallback 
 
 -----------------------------------------------------------------------------------------------------------------------------------------
 
+Day 06:
+
+Learned about Tool Calling (Function Calling) — how to give the AI real capabilities by letting it call C# functions on my machine.
+
+The AI itself cannot do math, access the internet, read files, or call databases. Tools are how you plug those capabilities in.
+
+How it works-
+Defined a tool using AIFunctionFactory.Create(), wrapping a C# lambda.
+AIFunctionFactory reads the [Description] attributes on parameters and builds a JSON schema that gets sent to the model.
+The model reads the schema and decides on its own when to call the tool and with what arguments.
+The actual C# code never leaves my machine — the model only sees the name, description, and parameter types.
+
+The tool loop-
+Trip 1: my question + tool schema sent to model. Model replies with a tool call (not text). res.Text is empty at this point.
+Trip 2: MEAI runs the C# function on my machine, sends the result back to the model.
+Trip 3: Model reads the result and writes the final plain-English answer.
+
+Without UseFunctionInvocation() middleware, this loop does not happen — the program just gets the raw tool call response and stops, so res.Text is empty.
+
+Added UseFunctionInvocation() by installing the Microsoft.Extensions.AI package (it lives there, not in Abstractions).
+
+Pipeline-
+My code → FunctionInvocationChatClient (middleware) → OpenAIChatClient → OpenRouter model
+
+The middleware owns the loop. It keeps sending tool results back until the model returns finish_reason = stop.
+
+Key things learned-
+Parallel tool calling: model can fire multiple tool calls in one response when they are independent.
+Sequential tool calling: model calls Tool A, reads its result, then calls Tool B using that result. The model figures out the dependency from the parameter descriptions.
+Error handling: if a tool throws, MEAI catches it and sends the error string back to the model. The model then decides to retry or tell the user. No automatic retry in the framework itself.
+Infinite loop protection: FunctionInvocationChatClient has a MaximumIterationsPerRequest cap (default 128). Can be lowered to control runaway API costs.
+
+Wrote Scenario 2 — Customer Support Agent:
+Two tools: get_customer_id(name) and get_latest_order(customerId).
+Model calls them sequentially because the second depends on the first.
+Added a while loop so the agent keeps running until the user types "stop".
+
+Detailed notes and Q&A from today's session are in Day06/README.md — covers the tool loop explained simply, real-world scenarios (parallel tools, dependent tools, DB calls, 3rd party APIs, error handling, infinite loop protection).
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+
