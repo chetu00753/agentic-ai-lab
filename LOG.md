@@ -145,3 +145,26 @@ Detailed notes and Q&A from today's session are in Day06/README.md — covers th
 
 -----------------------------------------------------------------------------------------------------------------------------------------
 
+Day 07:
+
+Revisited Tool Calling from Day06 with a cleaner, minimal setup.
+
+Built a single-file agent with two tools:
+- calculator: uses System.Data.DataTable.Compute() to safely evaluate arithmetic expressions like "3 + 4 * 2" without running arbitrary code.
+- get_current_date: returns today's date as a formatted string.
+
+Key thing practiced — configuring MaximumIterationsPerRequest properly.
+
+The correct overload in Microsoft.Extensions.AI 10.7.0 is:
+UseFunctionInvocation(ILoggerFactory, Action<FunctionInvokingChatClient>)
+
+Passing the configure lambda as the first argument causes a compile error (CS1660) because it gets matched to ILoggerFactory. Fix is to use named parameters:
+.UseFunctionInvocation(loggerFactory: null, configure: opts => opts.MaximumIterationsPerRequest = 8)
+
+Learned what MaximumIterationsPerRequest actually protects against:
+The middleware runs a loop — send → tool call → result → send again. A confused model can loop forever with no final answer.
+MaximumIterationsPerRequest caps the number of round-trips. On hitting the limit, the middleware stops and returns whatever the model last produced, preventing runaway API cost.
+Rule of thumb: set it slightly above the maximum legitimate tool calls your flow needs.
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+
