@@ -168,3 +168,30 @@ Rule of thumb: set it slightly above the maximum legitimate tool calls your flow
 
 -----------------------------------------------------------------------------------------------------------------------------------------
 
+Day 08:
+
+Built a multi-tool file-reading agent with sandboxed file access and a stub web search tool.
+
+Two tools defined:
+- read_file: reads a file from the ./data/ directory. Takes a relative path, resolves it to a full path, and checks it stays inside the allowed directory using Path.GetFullPath comparison — this prevents directory traversal attacks (e.g. "../../etc/passwd").
+- search_web: a stub that returns fake search results. Placeholder for a real HTTP call to a search API in a future phase.
+
+Key things learned-
+
+Path sanitization pattern:
+Never use a user-supplied path directly. Always call Path.GetFullPath on the joined path, then verify it starts with Path.GetFullPath("data"). If the resolved path escapes the allowed directory, return an error string instead of reading the file.
+
+SafeTool wrapper:
+Wrapped each tool body in a SafeTool() helper that catches any exception and returns "ERROR: <message>" instead of throwing. This means the model always gets a string back — even on failure — so it can inform the user gracefully rather than crashing the loop.
+
+Why return error strings instead of throwing:
+If a tool throws, MEAI catches it internally and sends the exception message back to the model. Catching it ourselves gives us control over the format and prevents leaking internal stack traces to the model context.
+
+Stub tools as placeholders:
+search_web is intentionally fake. Wiring up a real HTTP search API is a separate concern. Stub lets the agent architecture be tested end-to-end before the real integration exists.
+
+data/ directory pattern:
+Keeping all agent-accessible files in a dedicated data/ folder is a simple but effective sandboxing strategy. The agent can read anything there, nothing outside.
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+

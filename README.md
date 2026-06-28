@@ -37,6 +37,7 @@ OPENROUTER_API_KEY=your_key_here
 | [Day05](Day05/) | Streaming responses | `GetStreamingResponseAsync`, `IAsyncEnumerable`, `UsageContent`, cost estimation |
 | [Day06](Day06/) | Tool calling | `AIFunctionFactory`, `UseFunctionInvocation`, tool loop, parallel & sequential tools |
 | [Day07](Day07/) | Tool calling revisited | `DataTable.Compute` for safe arithmetic, `MaximumIterationsPerRequest`, correct `UseFunctionInvocation` overload |
+| [Day08](Day08/) | Multi-tool file agent | `read_file` + `search_web` tools, path traversal prevention, `SafeTool` exception wrapper, sandboxed `data/` directory |
 
 ## Architecture
 

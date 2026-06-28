@@ -1,0 +1,8 @@
+Name: Chetan Kumar
+Project: Agentic AI Learning Lab
+Day: 08 - Tool Calling with file access
+
+Goals for today:
+- Understand how AIFunctionFactory.Create works
+- Learn path sanitization to prevent directory traversal
+- Call a tool from the model and read its output
