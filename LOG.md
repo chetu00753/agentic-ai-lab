@@ -195,3 +195,40 @@ Keeping all agent-accessible files in a dedicated data/ folder is a simple but e
 
 -----------------------------------------------------------------------------------------------------------------------------------------
 
+Day 09:
+
+Built a resilient multi-provider fallback client and extended the file agent with write capability.
+
+Two main additions:
+
+FallbackChatClient (FallbackChatClient.cs):
+A custom IChatClient that wraps a priority-ordered list of (client, label) pairs — Gemini models first, then OpenRouter free models, then Groq models. On each request it tries candidates in order and falls back automatically on provider-side errors.
+
+Failure handling strategy:
+- 404 → permanent skip. The model doesn't exist at that endpoint; no point retrying ever.
+- 429 / 5xx → 60-second cooldown stored in a _skipUntil dictionary, then the candidate is retried on the next request.
+- Other exceptions → fall through (not caught, propagate normally).
+
+ShouldFallback checks both ClientResultException.Status and string patterns in the message to catch rate-limit errors that come back wrapped or with no status code.
+
+Works for both GetResponseAsync and GetStreamingResponseAsync. The streaming path buffers all updates before yielding so a mid-stream failure triggers a full fallback to the next candidate rather than a partial response.
+
+write_file tool (new):
+Added a third tool alongside list_files and read_file. The agent can now create or overwrite files in the sandboxed ./data/ directory. Same DataPath() sanitization and SafeTool() wrapper as the read tool.
+
+list_files tool (also new):
+Lists all filenames in ./data/ so the agent can discover what's available before deciding which files to read.
+
+Key things learned:
+
+Why a flat candidate list beats a nested provider list:
+Using a single IReadOnlyList<(IChatClient, string)> means all models across all providers share one priority order. Adding a new provider or reordering is just changing where you insert items in BuildCandidates(). No special provider-level abstraction needed.
+
+Cooldown vs permanent skip:
+404 means the endpoint doesn't know the model — retrying will never succeed. 429/5xx are transient. Distinguishing them avoids hammering a dead endpoint while still recovering from rate limits.
+
+Streaming fallback buffering trade-off:
+Buffering the whole stream before yielding means you lose streaming UX if the first candidate succeeds but is slow. The alternative — yield-then-catch — can't be done in C# because you can't use try/catch around a yield return inside an iterator. Buffering is the correct solution here.
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+

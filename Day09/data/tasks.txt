@@ -1,0 +1,6 @@
+Pending tasks:
+- [ ] Add streaming support
+- [ ] Explore structured output
+- [ ] Try multi-agent patterns
+- [x] Implement token counting middleware
+- [x] Build 3-tool conversation demo

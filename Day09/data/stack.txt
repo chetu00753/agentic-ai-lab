@@ -1,0 +1,7 @@
+Tech stack:
+- Runtime: .NET 10 / C#
+- LLM abstraction: Microsoft.Extensions.AI (IChatClient)
+- Provider: OpenRouter (free tier)
+- Model: openai/gpt-oss-120b:free
+- Env loading: DotNetEnv
+- JSON: Newtonsoft.Json

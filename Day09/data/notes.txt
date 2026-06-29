@@ -1,0 +1,8 @@
+Project: Agentic AI Learning Lab
+Author: Chetankumar
+Started: June 2026
+
+Day goals:
+- Understand tool calling with IChatClient
+- Build middleware for token counting
+- Practice multi-tool conversations

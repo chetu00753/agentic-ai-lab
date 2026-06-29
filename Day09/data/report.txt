@@ -1,0 +1,30 @@
+Report Summary
+==============
+
+Project Information:
+- Project: Agentic AI Learning Lab
+- Author: Chetankumar
+- Started: June 2026
+
+Day Goals:
+- Understand tool calling with IChatClient
+- Build middleware for token counting
+- Practice multi-tool conversations
+
+Tech Stack:
+- Runtime: .NET 10 / C#
+- LLM abstraction: Microsoft.Extensions.AI (IChatClient)
+- Provider: OpenRouter (free tier)
+- Model: openai/gpt-oss-120b:free
+- Env loading: DotNetEnv
+- JSON: Newtonsoft.Json
+
+Tasks:
+Pending:
+- Add streaming support
+- Explore structured output
+- Try multi-agent patterns
+
+Completed:
+- Implement token counting middleware
+- Build 3-tool conversation demo

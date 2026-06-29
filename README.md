@@ -38,6 +38,7 @@ OPENROUTER_API_KEY=your_key_here
 | [Day06](Day06/) | Tool calling | `AIFunctionFactory`, `UseFunctionInvocation`, tool loop, parallel & sequential tools |
 | [Day07](Day07/) | Tool calling revisited | `DataTable.Compute` for safe arithmetic, `MaximumIterationsPerRequest`, correct `UseFunctionInvocation` overload |
 | [Day08](Day08/) | Multi-tool file agent | `read_file` + `search_web` tools, path traversal prevention, `SafeTool` exception wrapper, sandboxed `data/` directory |
+| [Day09](Day09/) | Fallback client + write tool | `FallbackChatClient` with permanent-skip (404) and cooldown (429/5xx), multi-provider setup (Gemini/OpenRouter/Groq), `list_files` + `write_file` tools |
 
 ## Architecture
 

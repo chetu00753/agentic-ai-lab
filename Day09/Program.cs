@@ -1,31 +1,3 @@
-#!/bin/bash
-
-set -e
-
-if [ -z "$1" ]; then
-    echo "Usage: $0 <project-name>"
-    exit 1
-fi
-
-PROJECT_NAME="$1"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$SCRIPT_DIR/$PROJECT_NAME"
-
-echo "Creating project '$PROJECT_NAME'..."
-dotnet new console -n "$PROJECT_NAME" --output "$PROJECT_DIR"
-
-echo "Copying .env..."
-cp "$SCRIPT_DIR/.env" "$PROJECT_DIR/.env"
-
-echo "Copying shared utilities..."
-for f in "$SCRIPT_DIR/Shared/"*.cs.template; do
-    cp "$f" "$PROJECT_DIR/$(basename "${f%.template}")"
-done
-
-cd "$PROJECT_DIR"
-
-echo "Writing boilerplate..."
-cat > Program.cs << 'EOF'
 using System.ClientModel;
 using System.ComponentModel;
 using DotNetEnv;
@@ -67,6 +39,16 @@ try
         })
         .Build();
 
+    // Sandboxes all file operations to ./data/
+    static string DataPath(string filePath)
+    {
+        var safe = Path.GetFullPath(Path.Combine("data", filePath));
+        var allowed = Path.GetFullPath("data");
+        if (!safe.StartsWith(allowed))
+            throw new InvalidOperationException("Path escapes allowed directory.");
+        return safe;
+    }
+
     static string SafeTool(Func<string> fn)
     {
         try
@@ -79,26 +61,75 @@ try
         }
     }
 
-    AITool readFile = AIFunctionFactory.Create(
-        ([Description("Relative path inside ./data/")] string filePath) =>
+    AITool listFiles = AIFunctionFactory.Create(
+        () =>
             SafeTool(() =>
             {
-                var safe = Path.GetFullPath(Path.Combine("data", filePath));
-                var allowed = Path.GetFullPath("data");
-                if (!safe.StartsWith(allowed))
-                    return "Error: path escapes allowed directory";
-                if (!File.Exists(safe))
-                    return "Error: file does not exist";
-                return File.ReadAllText(safe);
+                var files = Directory
+                    .GetFiles("data")
+                    .Select(Path.GetFileName)
+                    .Where(f => f is not null)
+                    .ToArray();
+                return files.Length == 0 ? "No files found." : string.Join("\n", files);
             }),
-        name: "read_file",
-        description: "Read a file from the ./data/ folder."
+        name: "list_files",
+        description: "List all files in the ./data/ folder."
     );
 
-    var options = new ChatOptions { Tools = [readFile] };
+    AITool readFile = AIFunctionFactory.Create(
+        ([Description("File name inside ./data/ (e.g. notes.txt)")] string fileName) =>
+            SafeTool(() => File.ReadAllText(DataPath(fileName))),
+        name: "read_file",
+        description: "Read the contents of a file in the ./data/ folder."
+    );
 
-    var response = await chat.GetResponseAsync("Say hello in one sentence.", options);
-    Console.WriteLine(response.Text);
+    AITool writeFile = AIFunctionFactory.Create(
+        (
+            [Description("File name to create inside ./data/ (e.g. report.txt)")] string fileName,
+            [Description("Text content to write into the file")] string content
+        ) =>
+            SafeTool(() =>
+            {
+                File.WriteAllText(DataPath(fileName), content);
+                return $"Written {content.Length} characters to {fileName}.";
+            }),
+        name: "write_file",
+        description: "Write text content to a file in the ./data/ folder. Creates or overwrites the file."
+    );
+
+    var options = new ChatOptions { Tools = [listFiles, readFile, writeFile] };
+
+    var messages = new List<ChatMessage>
+    {
+        new(
+            ChatRole.System,
+            "You are a helpful assistant with access to a small file system. "
+                + "Use your tools to answer questions accurately."
+        ),
+        new(
+            ChatRole.User,
+            "List the files in the data folder, read each one, "
+                + "then write a report.txt that summarises the key information you found across all files."
+        ),
+    };
+
+    Console.WriteLine("=== Starting 3-tool conversation ===\n");
+
+    var response = await chat.GetResponseAsync(messages, options);
+    Console.WriteLine($"\nAssistant: {response.Text}");
+
+    messages.AddRange(response.Messages);
+    messages.Add(
+        new ChatMessage(
+            ChatRole.User,
+            "Good. Now read back report.txt so I can confirm it looks right."
+        )
+    );
+
+    Console.WriteLine("\n--- Second turn ---\n");
+
+    response = await chat.GetResponseAsync(messages, options);
+    Console.WriteLine($"\nAssistant: {response.Text}");
 
     if (tokenCounter is not null)
         LogUsageToCsv(tokenCounter.TotalIn, tokenCounter.TotalOut);
@@ -108,6 +139,8 @@ catch (Exception ex)
     Console.WriteLine($"Error: {ex.Message}");
 }
 
+// Builds the priority-ordered candidate list: Gemini → OpenRouter → Groq.
+// Skips any provider whose key is missing.
 static IReadOnlyList<(IChatClient Client, string Label)> BuildCandidates(
     string? geminiKey,
     string? openRouterKey,
@@ -162,12 +195,7 @@ static IReadOnlyList<(IChatClient Client, string Label)> BuildCandidates(
             new OpenAIClientOptions { Endpoint = new Uri("https://api.groq.com/openai/v1") }
         );
         foreach (
-            var model in new[]
-            {
-                "llama-3.3-70b-versatile",
-                "llama3-70b-8192",
-                "gemma2-9b-it",
-            }
+            var model in new[] { "llama-3.3-70b-versatile", "llama3-70b-8192", "gemma2-9b-it" }
         )
             list.Add((client.GetChatClient(model).AsIChatClient(), $"Groq/{model}"));
     }
@@ -217,15 +245,3 @@ class TokenCountingChatClient(IChatClient inner) : DelegatingChatClient(inner)
         return response;
     }
 }
-EOF
-
-echo "Creating data/ folder with sample file..."
-mkdir -p data
-cat > data/notes.txt << 'NOTES'
-Project: Agentic AI Learning Lab
-Notes go here.
-NOTES
-
-echo ""
-echo "Done! To run:"
-echo "  cd $PROJECT_NAME && dotnet run"
